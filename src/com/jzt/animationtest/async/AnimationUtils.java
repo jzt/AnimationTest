@@ -24,7 +24,7 @@ import android.widget.ImageView;
  * 
  */
 
-public class BitmapUtils {
+public class AnimationUtils {
 
   public static void transition(final View view, final Class<?> activity) {
 
@@ -84,10 +84,10 @@ public class BitmapUtils {
 
     System.out.println("in getCachedBitmap()");
 
-    new AsyncTask<Void, Void, Bitmap>() {
+    new AsyncTask<Void, Void, Bitmap[]>() {
 
       @Override
-      protected Bitmap doInBackground(Void... params) {
+      protected Bitmap[] doInBackground(Void... params) {
         Bitmap result = null;
         File mCacheDir = activity.getCacheDir();
         File mBmp = new File(mCacheDir, "bmp");
@@ -101,19 +101,20 @@ public class BitmapUtils {
       }
 
       @Override
-      protected void onPostExecute(Bitmap result) {
+      protected void onPostExecute(Bitmap[] results) {
         System.out.println("in onPostExecute()");
         LayoutInflater inflater =
-            (LayoutInflater) activity.getSystemService(activity.LAYOUT_INFLATER_SERVICE);
+            (LayoutInflater) activity.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         ViewGroup layout = (ViewGroup) inflater.inflate(id, null, false);
         ImageView mOverlay = new ImageView(activity);
         mOverlay.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT,
             LayoutParams.MATCH_PARENT));
-        mOverlay.setImageBitmap(result);
+        mOverlay.setImageBitmap(results);
         layout.addView(mOverlay);
         activity.setContentView(layout);
       }
     }.execute();
   }
+  
 }
 
