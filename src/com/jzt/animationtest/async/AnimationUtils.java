@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Random;
 
 import android.app.Activity;
 import android.content.Context;
@@ -12,17 +13,22 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Paint.Style;
+import android.graphics.Path;
+import android.graphics.Region;
 import android.os.AsyncTask;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewGroup.LayoutParams;
+import android.view.animation.AccelerateInterpolator;
+import android.view.animation.Animation;
+import android.view.animation.Animation.AnimationListener;
+import android.view.animation.TranslateAnimation;
 import android.widget.ImageView;
-
-/**
- * @author Jon Tucker
- * 
- */
+import android.widget.RelativeLayout;
+import android.widget.RelativeLayout.LayoutParams;
 
 public class AnimationUtils {
 
@@ -32,13 +38,14 @@ public class AnimationUtils {
       @Override
       protected Bitmap doInBackground(View... params) {
         View v = params[0];
+        v = params[0];
         Bitmap bitmap = Bitmap.createBitmap(v.getWidth(), v.getHeight(), Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(bitmap);
         v.layout(0, 0, v.getWidth(), v.getHeight());
         v.draw(c);
         return bitmap;
       }
-      
+
       protected void onPostExecute(Bitmap result) {
         cacheBitmapAndStartActivity(view.getContext(), result, activity);
       }
@@ -88,33 +95,155 @@ public class AnimationUtils {
 
       @Override
       protected Bitmap[] doInBackground(Void... params) {
-        Bitmap result = null;
+        Bitmap bitmap = null;
         File mCacheDir = activity.getCacheDir();
         File mBmp = new File(mCacheDir, "bmp");
         try {
           FileInputStream mInput = new FileInputStream(mBmp);
-          result = BitmapFactory.decodeStream(mInput);
+          bitmap = BitmapFactory.decodeStream(mInput);
         } catch (FileNotFoundException e) {
           e.printStackTrace();
         }
-        return result;
+
+        Random random = new Random(System.currentTimeMillis());
+        float leftX = 0;
+        float rightX = bitmap.getWidth();
+        float leftY = random.nextFloat() * bitmap.getHeight();
+        float rightY = random.nextFloat() * bitmap.getHeight();
+
+        int minY = (int) Math.min(leftY, rightY);
+        int maxY = (int) Math.max(leftY, rightY);
+
+        Bitmap[] results = new Bitmap[2];
+        results[0] = Bitmap.createBitmap(bitmap, (int) leftX, 0, (int) rightX, maxY);
+        results[1] =
+            Bitmap.createBitmap(bitmap, (int) leftX, minY, (int) rightX, bitmap.getHeight() - minY);
+//        bitmap.recycle();
+        
+        System.out.println("minY: " + minY);
+        System.out.println("maxY: " + maxY);
+        System.out.println("topHeight: " + results[0].getHeight());
+        System.out.println("bottomHeight: " + results[1].getHeight());
+        System.out.println("bitmap.getHeight() - minY: " + (bitmap.getHeight() - minY));
+        
+        Path topPath = new Path();
+        Path bottomPath = new Path();
+
+        if (leftY < rightY) {
+          topPath.moveTo(leftX, leftY);
+          topPath.lineTo(leftX, rightY);
+          topPath.lineTo(rightX, rightY);
+          topPath.lineTo(leftX, leftY);
+
+          bottomPath.moveTo(leftX, leftY);
+          bottomPath.lineTo(rightX, rightY);
+          bottomPath.lineTo(rightX, leftY);
+          bottomPath.lineTo(leftX, leftY);
+        } else {
+          topPath.moveTo(leftX, leftY);
+          topPath.lineTo(rightX, rightY);
+          topPath.lineTo(rightX, leftY);
+          topPath.lineTo(leftX, leftY);
+
+          bottomPath.moveTo(leftX,  rightY);
+          bottomPath.lineTo(rightX, rightY);
+          bottomPath.lineTo(leftX, leftY);
+          bottomPath.lineTo(leftX, rightY);
+        }
+        
+        topPath.close();
+        bottomPath.close();
+        
+        Paint paint = new Paint();
+        paint.setStyle(Style.FILL);
+        paint.setColor(Color.TRANSPARENT);
+        Canvas topCanvas = new Canvas(results[0]);
+        Canvas bottomCanvas = new Canvas(results[1]);
+        topCanvas.clipPath(topPath, Region.Op.UNION);
+        bottomCanvas.clipPath(bottomPath, Region.Op.DIFFERENCE);
+        topCanvas.drawPath(topPath, paint);
+        bottomCanvas.drawPath(bottomPath, paint);
+
+        paint.setColor(Color.GREEN);
+        paint.setStrokeWidth(10f);
+        topCanvas.drawLine(leftX, leftY, rightX, rightY, paint);
+        topCanvas.drawCircle(leftX,  leftY, 20, paint);
+        topCanvas.drawCircle(rightX, rightY, 20, paint);
+        paint.setColor(Color.MAGENTA);
+        bottomCanvas.drawLine(leftX, leftY, rightX, rightY, paint);
+        bottomCanvas.drawCircle(leftX,  leftY, 20, paint);
+        bottomCanvas.drawCircle(rightX, rightY, 20, paint);
+
+        return results;
       }
 
       @Override
       protected void onPostExecute(Bitmap[] results) {
         System.out.println("in onPostExecute()");
-        LayoutInflater inflater =
-            (LayoutInflater) activity.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        ViewGroup layout = (ViewGroup) inflater.inflate(id, null, false);
-        ImageView mOverlay = new ImageView(activity);
-        mOverlay.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT,
-            LayoutParams.MATCH_PARENT));
-        mOverlay.setImageBitmap(results);
-        layout.addView(mOverlay);
-        activity.setContentView(layout);
+        
+        LayoutInflater inflater = (LayoutInflater) activity.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        RelativeLayout rl = (RelativeLayout) inflater.inflate(id, null, false);
+        RelativeLayout.LayoutParams lp =
+            new RelativeLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
+        lp.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+        ImageView top = new ImageView(activity);
+        top.setImageBitmap(results[0]);
+        top.setLayoutParams(lp);
+        rl.addView(top);
+        
+        lp = new RelativeLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
+        lp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        ImageView bottom = new ImageView(activity);
+        bottom.setImageBitmap(results[1]);
+        bottom.setLayoutParams(lp);
+        rl.addView(bottom);
+        activity.setContentView(rl);
+        
+        // kick off the animation
+//        animate(rl, top, bottom);
       }
+
     }.execute();
   }
   
-}
+  private static void animate(final ViewGroup container, final View top, final View bottom) {
+    final TranslateAnimation topAnimation =
+        new TranslateAnimation(Animation.RELATIVE_TO_SELF, 0f, Animation.RELATIVE_TO_SELF, 0f,
+            Animation.RELATIVE_TO_SELF, 0, Animation.RELATIVE_TO_SELF, -1.0f);
+    final TranslateAnimation bottomAnimation =
+        new TranslateAnimation(Animation.RELATIVE_TO_SELF, 0f, Animation.RELATIVE_TO_SELF, 0f,
+            Animation.RELATIVE_TO_SELF, 0, Animation.RELATIVE_TO_SELF, 1.0f);
+    
+    AnimationListener listener = new AnimationListener() {
+      @Override
+      public void onAnimationStart(Animation animation) {}
+      @Override
+      public void onAnimationRepeat(Animation animation) {}
+      @Override
+      public void onAnimationEnd(Animation animation) {
+        if (animation.equals(topAnimation)) {
+          System.out.println("Top animation complete.");
+          top.setVisibility(View.GONE);
+          container.removeView(top);
+        }
+        if (animation.equals(bottomAnimation)) {
+          System.out.println("Bottom animation complete.");
+          bottom.setVisibility(View.GONE);
+          container.removeView(bottom);
+        }
+      }
+    };
+    
+    topAnimation.setAnimationListener(listener);
+    topAnimation.setDuration(10000);
+    topAnimation.setInterpolator(new AccelerateInterpolator());
 
+    bottomAnimation.setAnimationListener(listener);
+    bottomAnimation.setDuration(10000);
+    bottomAnimation.setInterpolator(new AccelerateInterpolator());
+
+    top.startAnimation(topAnimation);
+    bottom.startAnimation(bottomAnimation);
+
+  }
+}
