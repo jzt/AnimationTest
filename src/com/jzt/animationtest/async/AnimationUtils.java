@@ -13,10 +13,11 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
 import android.graphics.Path;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.Region;
 import android.os.AsyncTask;
 import android.view.LayoutInflater;
@@ -135,20 +136,20 @@ public class AnimationUtils {
           topPath.lineTo(rightX, rightY);
           topPath.lineTo(leftX, leftY);
 
-          bottomPath.moveTo(leftX, leftY);
-          bottomPath.lineTo(rightX, rightY);
-          bottomPath.lineTo(rightX, leftY);
-          bottomPath.lineTo(leftX, leftY);
+          bottomPath.moveTo(0, 0);
+          bottomPath.lineTo(rightX, rightY-leftY);
+          bottomPath.lineTo(rightX, 0);
+          bottomPath.lineTo(0, 0);
         } else {
           topPath.moveTo(leftX, leftY);
           topPath.lineTo(rightX, rightY);
           topPath.lineTo(rightX, leftY);
           topPath.lineTo(leftX, leftY);
 
-          bottomPath.moveTo(leftX,  rightY);
-          bottomPath.lineTo(rightX, rightY);
-          bottomPath.lineTo(leftX, leftY);
-          bottomPath.lineTo(leftX, rightY);
+          bottomPath.moveTo(0,  0);
+          bottomPath.lineTo(0, leftY - rightY);
+          bottomPath.lineTo(rightX, 0);
+          bottomPath.lineTo(0, 0);
         }
         
         topPath.close();
@@ -156,7 +157,9 @@ public class AnimationUtils {
         
         Paint paint = new Paint();
         paint.setStyle(Style.FILL);
-        paint.setColor(Color.TRANSPARENT);
+        paint.setAntiAlias(true);
+//        paint.setColor(Color.TRANSPARENT);
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
         Canvas topCanvas = new Canvas(results[0]);
         Canvas bottomCanvas = new Canvas(results[1]);
         topCanvas.clipPath(topPath, Region.Op.UNION);
@@ -164,15 +167,16 @@ public class AnimationUtils {
         topCanvas.drawPath(topPath, paint);
         bottomCanvas.drawPath(bottomPath, paint);
 
-        paint.setColor(Color.GREEN);
-        paint.setStrokeWidth(10f);
-        topCanvas.drawLine(leftX, leftY, rightX, rightY, paint);
-        topCanvas.drawCircle(leftX,  leftY, 20, paint);
-        topCanvas.drawCircle(rightX, rightY, 20, paint);
-        paint.setColor(Color.MAGENTA);
-        bottomCanvas.drawLine(leftX, leftY, rightX, rightY, paint);
-        bottomCanvas.drawCircle(leftX,  leftY, 20, paint);
-        bottomCanvas.drawCircle(rightX, rightY, 20, paint);
+//        paint.setColor(Color.GREEN);
+//        paint.setStrokeWidth(10f);
+//        topCanvas.drawLine(leftX, leftY, rightX, rightY, paint);
+//        topCanvas.drawCircle(leftX, maxY, 30, paint);
+//        topCanvas.drawCircle(rightX, maxY, 30, paint);
+//        paint.setColor(Color.MAGENTA);
+//        bottomCanvas.drawLine(leftX, leftY, rightX, rightY, paint);
+//        bottomCanvas.drawCircle(leftX, minY, 30, paint);
+//        bottomCanvas.drawCircle(rightX, minY, 30, paint);
+        
 
         return results;
       }
@@ -200,7 +204,7 @@ public class AnimationUtils {
         activity.setContentView(rl);
         
         // kick off the animation
-//        animate(rl, top, bottom);
+        animate(rl, top, bottom);
       }
 
     }.execute();
