@@ -12,13 +12,16 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.BitmapShader;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Region;
+import android.graphics.Shader;
 import android.os.AsyncTask;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -65,7 +68,7 @@ public class AnimationUtils {
         File f = new File(cacheDir, "bmp");
         try {
           FileOutputStream out = new FileOutputStream(f);
-          bitmap.compress(Bitmap.CompressFormat.JPEG, 25, out);
+          bitmap.compress(Bitmap.CompressFormat.PNG, 25, out);
           out.flush();
           out.close();
           System.out.println("Cached bitmap.");
@@ -116,16 +119,13 @@ public class AnimationUtils {
         int maxY = (int) Math.max(leftY, rightY);
 
         Bitmap[] results = new Bitmap[2];
-        results[0] = Bitmap.createBitmap(bitmap, (int) leftX, 0, (int) rightX, maxY);
+        results[0] =
+            Bitmap.createBitmap(bitmap, (int) leftX, 0, (int) rightX, maxY).copy(
+                Bitmap.Config.ARGB_8888, true);
         results[1] =
-            Bitmap.createBitmap(bitmap, (int) leftX, minY, (int) rightX, bitmap.getHeight() - minY);
-//        bitmap.recycle();
-        
-        System.out.println("minY: " + minY);
-        System.out.println("maxY: " + maxY);
-        System.out.println("topHeight: " + results[0].getHeight());
-        System.out.println("bottomHeight: " + results[1].getHeight());
-        System.out.println("bitmap.getHeight() - minY: " + (bitmap.getHeight() - minY));
+            Bitmap.createBitmap(bitmap, (int) leftX, minY, (int) rightX, bitmap.getHeight() - minY)
+                .copy(Bitmap.Config.ARGB_8888, true);
+        bitmap.recycle();
         
         Path topPath = new Path();
         Path bottomPath = new Path();
@@ -156,27 +156,20 @@ public class AnimationUtils {
         bottomPath.close();
         
         Paint paint = new Paint();
-        paint.setStyle(Style.FILL);
         paint.setAntiAlias(true);
-//        paint.setColor(Color.TRANSPARENT);
         paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
-        Canvas topCanvas = new Canvas(results[0]);
-        Canvas bottomCanvas = new Canvas(results[1]);
-        topCanvas.clipPath(topPath, Region.Op.UNION);
-        bottomCanvas.clipPath(bottomPath, Region.Op.DIFFERENCE);
+//        paint.setShader(new BitmapShader(results[0], Shader.TileMode.CLAMP, Shader.TileMode.CLAMP));
+        Bitmap topDst = Bitmap.createBitmap(results[0].getWidth(), results[0].getHeight(), Bitmap.Config.ARGB_8888);
+        Bitmap bottomDst = Bitmap.createBitmap(results[1].getWidth(), results[1].getHeight(), Bitmap.Config.ARGB_8888);
+
+        Canvas topCanvas = new Canvas(topDst);
+        Canvas bottomCanvas = new Canvas(bottomDst);
+        topCanvas.drawBitmap(results[0], 0, 0, new Paint());
+        bottomCanvas.drawBitmap(results[1], 0, 0, new Paint());
         topCanvas.drawPath(topPath, paint);
         bottomCanvas.drawPath(bottomPath, paint);
-
-//        paint.setColor(Color.GREEN);
-//        paint.setStrokeWidth(10f);
-//        topCanvas.drawLine(leftX, leftY, rightX, rightY, paint);
-//        topCanvas.drawCircle(leftX, maxY, 30, paint);
-//        topCanvas.drawCircle(rightX, maxY, 30, paint);
-//        paint.setColor(Color.MAGENTA);
-//        bottomCanvas.drawLine(leftX, leftY, rightX, rightY, paint);
-//        bottomCanvas.drawCircle(leftX, minY, 30, paint);
-//        bottomCanvas.drawCircle(rightX, minY, 30, paint);
-        
+        results[0] = topDst;
+        results[1] = bottomDst;
 
         return results;
       }
@@ -239,15 +232,15 @@ public class AnimationUtils {
     };
     
     topAnimation.setAnimationListener(listener);
-    topAnimation.setDuration(10000);
+    topAnimation.setDuration(400);
     topAnimation.setInterpolator(new AccelerateInterpolator());
+    topAnimation.setFillAfter(true);
 
     bottomAnimation.setAnimationListener(listener);
-    bottomAnimation.setDuration(10000);
+    bottomAnimation.setDuration(400);
     bottomAnimation.setInterpolator(new AccelerateInterpolator());
 
     top.startAnimation(topAnimation);
     bottom.startAnimation(bottomAnimation);
-
   }
 }
