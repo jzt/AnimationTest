@@ -1,16 +1,12 @@
 package com.jzt.animationtest.activity;
 
-import com.jzt.animationtest.R;
-import com.jzt.animationtest.R.id;
-import com.jzt.animationtest.R.layout;
-import com.jzt.animationtest.async.BitmapUtils;
-
-import android.os.Bundle;
 import android.app.Activity;
-import android.content.Intent;
-import android.view.Menu;
+import android.os.Bundle;
 import android.view.View;
 import android.view.View.OnClickListener;
+
+import com.jzt.animationtest.R;
+import com.jzt.animationtest.async.BitmapUtils;
 
 public class MainActivity extends Activity implements OnClickListener {
   
