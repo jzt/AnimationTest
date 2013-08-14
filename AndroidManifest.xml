@@ -23,7 +23,8 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="com.jzt.animationtest.activity.NewActivity" >
+            android:name="com.jzt.animationtest.activity.NewActivity" 
+            android:theme="@style/Transparent">
         </activity>
     </application>
 

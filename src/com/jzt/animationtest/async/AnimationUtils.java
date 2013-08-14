@@ -12,16 +12,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.BitmapShader;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Paint.Style;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
-import android.graphics.Region;
-import android.graphics.Shader;
 import android.os.AsyncTask;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -34,7 +29,42 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.RelativeLayout.LayoutParams;
 
+import com.jzt.animationtest.R;
+
 public class AnimationUtils {
+  
+  public static void invisify(final Activity activity, ViewGroup layout) {
+    System.out.println("in invisify()");
+    layout.setVisibility(View.INVISIBLE);
+    overlayBitmap(activity, layout);
+  }
+  
+  public static void overlayBitmap(final Activity activity, final ViewGroup layout) {
+    System.out.println("in overlayBitmap()");
+    new AsyncTask<ViewGroup, Void, Bitmap>() {
+      @Override
+      protected Bitmap doInBackground(ViewGroup... params) {
+        View v = params[0];
+        v = params[0];
+        Bitmap bitmap = Bitmap.createBitmap(v.getWidth(), v.getHeight(), Bitmap.Config.ARGB_8888);
+        Canvas c = new Canvas(bitmap);
+        v.layout(0, 0, v.getWidth(), v.getHeight());
+        v.draw(c);
+        System.out.println("width: " + bitmap.getWidth() + ", height: " + bitmap.getHeight());
+        return bitmap;
+      }
+      
+      protected void onPostExecute(Bitmap result) {
+        ImageView i = new ImageView(activity);
+        i.setLayoutParams(new RelativeLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+        System.out.println("childcount before: " + layout.getChildCount());
+        layout.addView(i);
+        System.out.println("childcount after: " + layout.getChildCount());
+//        activity.setTheme(R.style.AppTheme);
+        layout.setVisibility(View.VISIBLE);
+      };
+    }.execute(layout);
+  }
 
   public static void transition(final View view, final Class<?> activity) {
 

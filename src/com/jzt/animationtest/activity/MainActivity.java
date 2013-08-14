@@ -1,12 +1,12 @@
 package com.jzt.animationtest.activity;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.view.View.OnClickListener;
 
 import com.jzt.animationtest.R;
-import com.jzt.animationtest.async.AnimationUtils;
 
 public class MainActivity extends Activity implements OnClickListener {
   
@@ -19,6 +19,9 @@ public class MainActivity extends Activity implements OnClickListener {
   
   @Override
   public void onClick(View v) {
-    AnimationUtils.transition(v, NewActivity.class);
+//    AnimationUtils.transition(v, NewActivity.class);
+    Intent intent = new Intent(this, NewActivity.class);
+    intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
+    startActivity(intent);
   }
 }
